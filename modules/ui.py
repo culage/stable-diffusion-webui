@@ -555,6 +555,7 @@ def create_ui(wrap_gradio_gpu_call):
                     denoising_strength,
                 ] + custom_inputs,
                 outputs=[
+                    batch_count,
                     txt2img_gallery,
                     generation_info,
                     html_info

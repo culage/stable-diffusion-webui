@@ -84,13 +84,13 @@
     height: 100%;
 }
 
-#roll_col{
+#roll_col, #translate_col{
     min-width: unset !important;
     flex-grow: 0 !important;
     padding: 0.4em 0;
 }
 
-#roll, #paste{
+#roll, #paste, #ja_en, #en_ja {
     min-width: 2em;
     min-height: 2em;
     max-width: 2em;

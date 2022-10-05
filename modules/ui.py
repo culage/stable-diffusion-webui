@@ -417,6 +417,23 @@ def create_toprow(is_img2img):
                     with gr.Row():
                         prompt = gr.Textbox(label="Prompt", elem_id=f"{id_part}_prompt", show_label=False, placeholder="Prompt", lines=2)
 
+                with gr.Column(scale=1, elem_id="translate_col"):
+                    ja_en_button = gr.Button('\U0001f30f', elem_id="ja_en") # 日→英
+                    en_ja_button = gr.Button('\U0001f5fe', elem_id="en_ja") # 英→日
+                    
+                    ja_en_button.click(
+                        fn=None,
+                        _js='(text) => translate(text, "ja_en")',
+                        inputs=[prompt],
+                        outputs=[prompt],
+                    )
+                    en_ja_button.click(
+                        fn=None,
+                        _js='async (text) => alert(await translate(text, "en_ja"))',
+                        inputs=[prompt],
+                        outputs=[],
+                    )
+
                 with gr.Column(scale=1, elem_id="roll_col"):
                     roll = gr.Button(value=art_symbol, elem_id="roll", visible=len(shared.artist_db.artists) > 0)
                     paste = gr.Button(value=paste_symbol, elem_id="paste")
@@ -1426,6 +1443,71 @@ for filename in sorted(os.listdir(jsdir)):
     with open(os.path.join(jsdir, filename), "r", encoding="utf8") as jsfile:
         javascript += f"\n<script>{jsfile.read()}</script>"
 
+javascript += """
+<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/rollups/hmac-sha1.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/components/enc-base64-min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/oauth-1.0a@2.2.6/oauth-1.0a.min.js"></script>
+<script>
+  async function translate(text, type) {
+    if (text == "clear") {
+      localStorage.removeItem("textra_user_name");
+      localStorage.removeItem("textra_api_key");
+      localStorage.removeItem("textra_api_secret");
+      alert("翻訳APIキーをクリアしました。");
+      return text;
+    }
+    
+    name   = localStorage.getItem("textra_user_name");
+    key    = localStorage.getItem("textra_api_key");
+    secret = localStorage.getItem("textra_api_secret");
+    
+    const oauth = OAuth({
+      consumer: { key, secret },
+      signature_method: "HMAC-SHA1",
+      hash_function(base_string, key) {
+        return CryptoJS.HmacSHA1(base_string, key).toString(CryptoJS.enc.Base64);
+      }
+    });
+    
+    var url = (type == "en_ja" ? 
+      "https://mt-auto-minhon-mlt.ucri.jgn-x.jp/api/mt/generalNT_en_ja/" :
+      "https://mt-auto-minhon-mlt.ucri.jgn-x.jp/api/mt/generalNT_ja_en/");
+    const options = {
+      url,
+      method: "POST",
+      data: { text, name, key, type: "json" }
+    };
+    
+    const cors_support = "https://corsproxy.io/?";
+    const res = await fetch(cors_support + options.url, {
+      method: options.method,
+      body: new URLSearchParams(options.data),
+      headers: oauth.toHeader(oauth.authorize(options))
+    }).then((r) => r.json());
+    
+    if (res.resultset.code != 0) {
+      var msg = "";
+      msg += "【アクセス失敗】\\n";
+      msg += "\\n";
+      msg += "1. みんなの自動翻訳TexTraにログイン\\n"
+      msg += "2. https://mt-auto-minhon-mlt.ucri.jgn-x.jp/content/setting/user/edit/ を開く\\n"
+      msg += "3. 「ユーザ名/API key/API secret」形式でAPIキーを入力\\n"
+      msg += "\\n";
+      msg += "\\n";
+      msg += "APIキーをクリアしたい場合、プロンプトに「clear」とだけ入力して翻訳ボタンを押してください。";
+      msg += "\\n";
+      var api_key = prompt(msg);
+      if (!api_key) { return text; }
+      localStorage.setItem("textra_user_name" , api_key.split("/")[0].trim());
+      localStorage.setItem("textra_api_key"   , api_key.split("/")[1].trim());
+      localStorage.setItem("textra_api_secret", api_key.split("/")[2].trim());
+      return text;
+    }
+    
+    return res.resultset.result.text;
+  }
+</script>
+"""
 
 if 'gradio_routes_templates_response' not in globals():
     def template_response(*args, **kwargs):

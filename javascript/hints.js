@@ -13,6 +13,8 @@ titles = {
     "Seed": "A value that determines the output of random number generator - if you create an image with same parameters and seed as another image, you'll get the same result",
     "\u{1f3b2}\ufe0f": "Set seed to -1, which will cause a new random number to be used every time",
     "\u267b\ufe0f": "Reuse seed from last generation, mostly useful if it was randomed",
+    "\u{1f30f}": "英語に翻訳。 翻訳APIクリアは、プロンプトにclearと入力。",
+    "\u{1f5fe}": "日本語に翻訳。",
     "\u{1f3a8}": "Add a random artist to the prompt.",
     "\u2199\ufe0f": "Read generation parameters from prompt into user interface.",
     "\u{1f4c2}": "Open images output directory",
